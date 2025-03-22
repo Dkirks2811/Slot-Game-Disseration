@@ -13,7 +13,7 @@ const game = new Phaser.Game(config);
 
 const reelCount = 4;
 const symbolCount = 3; 
-const spinDuration = 2000; 
+const spinDuration = 300; 
 const symbolHeight = 100; 
 const reelStopDelay = 300; 
 
@@ -82,27 +82,40 @@ function preload() {
     for (let i = 1; i <= 8; i++) {
         this.load.image(`symbol${i}`, `./img${i}.png`);
     }
-    this.load.image('spinButton', './spinButton.png');
+    this.load.image('spinButton', './buttonSpin.png');
+    this.load.image('background', './background.png'); 
 }
-
 function create() {
+    this.add.image(400, 300, 'background').setDisplaySize(800, 600);
+
+    const reelWidth = 140; 
+    const totalReelWidth = reelCount * reelWidth; 
+    const totalReelHeight = symbolCount * symbolHeight;
+    
+    const startX = (800 - totalReelWidth) / 2 + reelWidth / 2; 
+    const startY = 200
+
     for (let i = 0; i < reelCount; i++) {
         let reel = [];
         for (let j = 0; j < symbolCount; j++) {
             let randomSymbol = Phaser.Math.Between(1, 8);
-            let symbol = this.add.sprite(150 + i * 120, 100 + j * symbolHeight, `symbol${randomSymbol}`);
+            let symbol = this.add.sprite(startX + i * reelWidth, startY + j  * symbolHeight, `symbol${randomSymbol}`);
+
+            symbol.setScale(symbolHeight / 450); 
             reel.push(symbol);
         }
         reels.push(reel);
     }
 
-
-    spinButton = this.add.sprite(400, 500, 'spinButton').setInteractive();
+    spinButton = this.add.sprite(400, startY + totalReelHeight + 50, 'spinButton').setInteractive();
+    spinButton.setScale(1.25);
     spinButton.on('pointerdown', () => startSpin(this));
 
-
-    coinText = this.add.text(10, 10, `Coins: ${coins}`, { fontSize: '24px', fill: '#fff' });
+    coinText = this.add.text(142, 530, `${'Coins:' + coins}`, { fontSize: '20px', fill: '#fff', fontFamily: 'Arial', fontStyle: 'bold' });
+    coinText.setAngle(4)
 }
+
+
 
 function startSpin(scene) {
     if (isSpinning || coins <= 0) return; 
@@ -140,7 +153,7 @@ function spinReel(scene, reel, index, onComplete) {
             const value = tween.getValue();
             reel.forEach((symbol) => {
 
-                symbol.y = 100 + (symbol.y - 100 + value) % (symbolHeight * symbolCount);
+                symbol.y = - 100 - (symbol.y / (symbolHeight ) );
             });
         },
         onComplete: () => {
@@ -150,7 +163,7 @@ function spinReel(scene, reel, index, onComplete) {
             });
 
             reel.forEach((symbol, positionIndex) => {
-                const finalY = 100 + positionIndex * symbolHeight;
+                const finalY = 200 + positionIndex * symbolHeight;
                 scene.tweens.add({
                     targets: symbol,
                     y: finalY,
