@@ -87,6 +87,7 @@ function preload() {
 
     this.load.audio('reelStop', './stopReel.mp3');
     this.load.audio('buttonPress', './clickSpin.mp3'); 
+    this.load.audio('winSound', './winSound.mp3');
 }
 function create() {
     this.add.image(400, 300, 'background').setDisplaySize(800, 600);
@@ -139,7 +140,7 @@ function startSpin(scene) {
             reelsFinished++;
             if (reelsFinished === reelCount) {
                 isSpinning = false;
-                calculatePayout();
+                calculatePayout(scene);
             }
         });
     });
@@ -191,14 +192,15 @@ function updateCoinText() {
     coinText.setText(`Coins: ${coins}`);
 }
 
-function calculatePayout() {
+function calculatePayout(scene) {
+    let won = false;
     paylines.forEach((line, lineIndex) => {
         const lineSymbols = line.map((row, reelIndex) => {
-            if (row === -1) return null; 
-            return reels[reelIndex][row - 1].texture.key; 
+            if (row === -1) return null;
+            return reels[reelIndex][row - 1].texture.key;
         });
 
-        const baseSymbol = lineSymbols.find((symbol) => symbol !== null); 
+        const baseSymbol = lineSymbols.find((symbol) => symbol !== null);
         const allMatch = lineSymbols.every(
             (symbol) => symbol === null || symbol === baseSymbol
         );
@@ -211,11 +213,18 @@ function calculatePayout() {
             console.log(
                 `You Win on Payline ${lineIndex + 1}! Symbol: ${winningSymbol}, Payout: ${basePayout}`
             );
+
+            won = true;
         }
     });
 
+    if (won) {
+        scene.sound.play('winSound'); 
+    }
+
     updateCoinText();
 }
+
 
 function update() {
 }
