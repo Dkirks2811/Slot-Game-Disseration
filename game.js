@@ -13,7 +13,7 @@ const game = new Phaser.Game(config);
 
 const reelCount = 4;
 const symbolCount = 3; 
-const spinDuration = 300; 
+const spinDuration = 400; 
 const symbolHeight = 100; 
 const reelStopDelay = 300; 
 
@@ -84,6 +84,9 @@ function preload() {
     }
     this.load.image('spinButton', './buttonSpin.png');
     this.load.image('background', './background.png'); 
+
+    this.load.audio('reelStop', './stopReel.mp3');
+    this.load.audio('buttonPress', './clickSpin.mp3'); 
 }
 function create() {
     this.add.image(400, 300, 'background').setDisplaySize(800, 600);
@@ -109,7 +112,10 @@ function create() {
 
     spinButton = this.add.sprite(400, startY + totalReelHeight + 50, 'spinButton').setInteractive();
     spinButton.setScale(1.25);
-    spinButton.on('pointerdown', () => startSpin(this));
+    spinButton.on('pointerdown', () => {
+        this.sound.play('buttonPress'); 
+        startSpin(this);
+    });
 
     coinText = this.add.text(142, 530, `${'Coins:' + coins}`, { fontSize: '20px', fill: '#fff', fontFamily: 'Arial', fontStyle: 'bold' });
     coinText.setAngle(4)
@@ -168,8 +174,9 @@ function spinReel(scene, reel, index, onComplete) {
                     targets: symbol,
                     y: finalY,
                     duration: 200,
-                    ease: 'Bounce.easeOut', 
+                    ease: 'Bounce.easeOut',
                     onComplete: () => {
+                        scene.sound.play('reelStop'); 
                         if (positionIndex === reel.length - 1) {
                             if (onComplete) onComplete();
                         }
