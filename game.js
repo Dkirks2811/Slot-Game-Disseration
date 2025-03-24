@@ -21,7 +21,18 @@ let reels = [];
 let isSpinning = false;
 let spinButton;
 let coins = 1000; 
+let coinBefore = 0;
 let coinText;
+let betAmount = 10;
+let isInBonusMode = false;
+let bonusTriggered = false;
+let bonusSymbolCount = 0;
+let freeSpinsText;
+
+let freeSpinsLeft = 0;
+let goldGlow;
+
+let bonusAchieved = false; 
 
 const payouts = {
     symbol1: 10,
@@ -88,7 +99,14 @@ function preload() {
     this.load.audio('reelStop', './stopReel.mp3');
     this.load.audio('buttonPress', './clickSpin.mp3'); 
     this.load.audio('winSound', './winSound.mp3');
+    this.load.audio('bigWin', './bigWin.mp3');
+
+    this.load.image('bonusSymbol', './bonus.png'); 
+    this.load.audio('suspenseSound', './suspense.mp3');
+    this.load.audio('bonusStart', './bonusStart.mp3');
+    this.load.image('goldGlow', './goldGlow.webp');
 }
+
 function create() {
     this.add.image(400, 300, 'background').setDisplaySize(800, 600);
 
@@ -97,7 +115,7 @@ function create() {
     const totalReelHeight = symbolCount * symbolHeight;
     
     const startX = (800 - totalReelWidth) / 2 + reelWidth / 2; 
-    const startY = 200
+    const startY = 200;
 
     for (let i = 0; i < reelCount; i++) {
         let reel = [];
@@ -115,58 +133,104 @@ function create() {
     spinButton.setScale(1.25);
     spinButton.on('pointerdown', () => {
         this.sound.play('buttonPress'); 
+        spinButton.setScale(1.1); 
+        this.tweens.add({
+            targets: spinButton,
+            scaleX: 1.25,
+            scaleY: 1.25,
+            duration: 150,
+            ease: 'Bounce.easeOut',
+        });
         startSpin(this);
     });
 
-    coinText = this.add.text(142, 530, `${'Coins:' + coins}`, { fontSize: '20px', fill: '#fff', fontFamily: 'Arial', fontStyle: 'bold' });
-    coinText.setAngle(4)
+    coinText = this.add.text(142, 527, `${'Coins:' + coins}`, { fontSize: '22px', fill: '#fff', fontFamily: 'Lilita One', stroke: '#000', strokeThickness: 3,});
+    coinText.setAngle(4);
+
+    goldGlow = this.add.image(400, 300, 'goldGlow').setDisplaySize(800, 600);
+    goldGlow.setDepth(20);
+    goldGlow.setVisible(false);
+
+    freeSpinsText = this.add.text(650, 50, '', {
+        fontSize: '22px',
+        fill: '#fff',
+        fontFamily: 'Lilita One',
+        stroke: '#000',
+        strokeThickness: 3,
+    }).setVisible(false);
 }
 
-
-
 function startSpin(scene) {
-    if (isSpinning || coins <= 0) return; 
+    if (isSpinning || coins <= 0 || (isInBonusMode && freeSpinsLeft <= 0)) return;
     isSpinning = true;
 
+    if (bonusAchieved) {
+        startBonusMode(scene);
+        bonusAchieved = false; 
+    }
 
-    coins -= 10; 
+    if (!isInBonusMode) {
+        coins -= betAmount;
+        coinBefore = coins
+    }
     updateCoinText();
 
-    let reelsFinished = 0; 
+    let reelsFinished = 0;
 
     reels.forEach((reel, index) => {
-        const delay = index * reelStopDelay; 
-        spinReel(scene, reel, index, () => {
+        const delay = index * reelStopDelay;
+        const spinSpeed = isInBonusMode ? spinDuration * 1.5 : spinDuration; 
+
+        spinReel(scene, reel, index, spinSpeed, () => {
             reelsFinished++;
             if (reelsFinished === reelCount) {
                 isSpinning = false;
                 calculatePayout(scene);
+
+                if (isInBonusMode) {
+                    freeSpinsText.setText(`Free Spins: ${freeSpinsLeft}`);
+
+                    if (freeSpinsLeft === 1) {
+                        endBonusMode(scene); 
+                    }
+
+                    freeSpinsLeft--; 
+                }
             }
         });
     });
 }
 
-function spinReel(scene, reel, index, onComplete) {
-    const spinCycles = 5; 
-    const spinDurationPerCycle = spinDuration / spinCycles; 
-
+function spinReel(scene, reel, index, spinSpeed, onComplete) {
+    const spinCycles = isInBonusMode ? 8 : 5; 
+    const spinDurationPerCycle = spinSpeed / spinCycles;
 
     const spinTween = scene.tweens.addCounter({
         from: 0,
-        to: symbolHeight * spinCycles * symbolCount, 
-        duration: spinDuration + index * reelStopDelay, 
-        ease: 'Cubic.easeInOut', 
+        to: symbolHeight * spinCycles * symbolCount,
+        duration: spinSpeed + index * reelStopDelay,
+        ease: 'Cubic.easeInOut',
         onUpdate: (tween) => {
             const value = tween.getValue();
             reel.forEach((symbol) => {
-
-                symbol.y = - 100 - (symbol.y / (symbolHeight ) );
+                symbol.y = -100 - (symbol.y / (symbolHeight));
             });
         },
         onComplete: () => {
             reel.forEach((symbol, positionIndex) => {
-                const randomSymbol = Phaser.Math.Between(1, 8); 
-                symbol.setTexture(`symbol${randomSymbol}`); 
+                const randomSymbol = Phaser.Math.Between(1, 8);
+                const isBonus = !isInBonusMode && Phaser.Math.Between(1, 10) === 2;
+                symbol.setTexture(isBonus ? 'bonusSymbol' : `symbol${randomSymbol}`);
+
+                if (isBonus) {
+                    bonusSymbolCount++;
+                    
+                    scene.sound.play('suspenseSound');
+
+                    if (bonusSymbolCount >= 2) {
+                        bonusAchieved = true;
+                    }
+                }
             });
 
             reel.forEach((symbol, positionIndex) => {
@@ -177,7 +241,7 @@ function spinReel(scene, reel, index, onComplete) {
                     duration: 200,
                     ease: 'Bounce.easeOut',
                     onComplete: () => {
-                        scene.sound.play('reelStop'); 
+                        scene.sound.play('reelStop');
                         if (positionIndex === reel.length - 1) {
                             if (onComplete) onComplete();
                         }
@@ -188,12 +252,97 @@ function spinReel(scene, reel, index, onComplete) {
     });
 }
 
+
+
 function updateCoinText() {
     coinText.setText(`Coins: ${coins}`);
 }
 
+function showWinPopup(scene, amount) {
+    let winText = scene.add.text(400, 100, `+${amount} Coins!`, {
+        fontSize: '32px',
+        fontFamily: 'Lilita One',
+        fill: '#ffde59',
+        stroke: '#000',
+        strokeThickness: 4
+    }).setOrigin(0.5).setDepth(10);
+
+    scene.tweens.add({
+        targets: winText,
+        y: 50, 
+        alpha: 0, 
+        duration: 2000,
+        ease: 'Power1',
+        onComplete: () => winText.destroy()
+    });
+}
+
+function showBonusPopup(scene) {
+    let bonusText = scene.add.text(400, 100, `Bonus Achieved!`, {
+        fontSize: '32px',
+        fontFamily: 'Lilita One',
+        fill: '#ffde59',
+        stroke: '#000',
+        strokeThickness: 4
+    }).setOrigin(0.5).setDepth(10);
+
+    scene.tweens.add({
+        targets: bonusText,
+        y: 50, 
+        alpha: 0, 
+        duration: 2000,
+        ease: 'Power1',
+        onComplete: () => bonusText.destroy()
+    });
+}
+
+function showBigWinPopup(scene, amount) {
+    let bigWinContainer = scene.add.container(400, 300).setDepth(15);
+
+    let background = scene.add.graphics();
+    background.fillStyle(0x000000, 0.8);
+    background.fillRect(-200, -100, 400, 200);
+    background.setAlpha(0);
+
+    let winText = scene.add.text(0, 0, `BIG WIN!\n+${amount} Coins!`, {
+        fontSize: '48px',
+        fontFamily: 'Lilita One',
+        fill: '#ffde59',
+        stroke: '#000',
+        strokeThickness: 6,
+        align: 'center'
+    }).setOrigin(0.5);
+
+    bigWinContainer.add([background, winText]);
+
+    scene.tweens.add({
+        targets: background,
+        alpha: 1,
+        duration: 2000
+    });
+
+    scene.tweens.add({
+        targets: winText,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        yoyo: true,
+        repeat: 3,
+        duration: 2000
+    });
+
+    scene.time.delayedCall(2000, () => {
+        bigWinContainer.destroy();
+    });
+}
+
 function calculatePayout(scene) {
     let won = false;
+    let totalWin = 0;
+    let isBigWin = false;
+
+    const bigWinThreshold = betAmount * 6; 
+
+    bonusSymbolCount = 0;
     paylines.forEach((line, lineIndex) => {
         const lineSymbols = line.map((row, reelIndex) => {
             if (row === -1) return null;
@@ -206,23 +355,123 @@ function calculatePayout(scene) {
         );
 
         if (allMatch && baseSymbol) {
-            const winningSymbol = baseSymbol;
-            const basePayout = payouts[winningSymbol] || 0;
+            let payout = payouts[baseSymbol] || 0;
+            if (isInBonusMode) payout *= 10;
 
-            coins += basePayout;
-            console.log(
-                `You Win on Payline ${lineIndex + 1}! Symbol: ${winningSymbol}, Payout: ${basePayout}`
-            );
-
+            coins += payout;
+            totalWin += payout;
             won = true;
+
+            if (totalWin >= bigWinThreshold) {
+                isBigWin = true;
+            }
         }
     });
 
+    updateCoinText();
+
     if (won) {
-        scene.sound.play('winSound'); 
+        if (isBigWin) {
+            scene.sound.play('bigWin');
+            showBigWinPopup(scene, totalWin);
+        } else {
+            scene.sound.play('winSound');
+            showWinPopup(scene, totalWin);
+        }
     }
 
-    updateCoinText();
+    if (bonusAchieved) {
+        scene.sound.play('bonusStart');
+        showBonusPopup(scene);
+    }
+
+    if (isInBonusMode && freeSpinsLeft >= 0) {
+        scene.time.delayedCall(1500, () => startSpin(scene)); 
+    }
+}
+
+
+function startBonusMode(scene) {
+    bonusTriggered = true;
+    isInBonusMode = true;
+    freeSpinsLeft = 8;
+
+    goldGlow.setVisible(true);
+    scene.tweens.add({
+        targets: goldGlow,
+        alpha: 0.2, 
+        duration: 1000,
+        ease: 'Linear'
+    });
+
+    freeSpinsText.setVisible(true).setText(`Free Spins: ${freeSpinsLeft}`);
+}
+
+
+function showBonusEndPopup(scene, totalBonusWin) {
+    let bonusWinContainer = scene.add.container(400, 300).setDepth(20);
+
+    let background = scene.add.graphics();
+    background.fillStyle(0x000000, 0.8);
+    background.fillRect(-250, -125, 500, 250);
+    background.setAlpha(1);
+
+    let winText = scene.add.text(0, -20, `BONUS COMPLETE!\nTotal Win: ${totalBonusWin} Coins!`, {
+        fontSize: '36px',
+        fontFamily: 'Lilita One',
+        fill: '#ffde59',
+        stroke: '#000',
+        strokeThickness: 6,
+        align: 'center'
+    }).setOrigin(0.5);
+
+    let continueText = scene.add.text(0, 80, `Click Spin to Continue`, {
+        fontSize: '24px',
+        fontFamily: 'Lilita One',
+        fill: '#fff',
+        stroke: '#000',
+        strokeThickness: 4,
+        align: 'center'
+    }).setOrigin(0.5);
+    
+    bonusWinContainer.add([background, winText, continueText]);
+
+    isSpinning = true;
+
+    for (let i = 0; i < 50; i++) {
+        let confetti = scene.add.rectangle(
+            Phaser.Math.Between(100, 700),
+            Phaser.Math.Between(-50, 100),
+            6, 12,
+            Phaser.Display.Color.RandomRGB().color
+        );
+        confetti.setRotation(Phaser.Math.FloatBetween(-0.5, 0.5));
+
+        scene.tweens.add({
+            targets: confetti,
+            y: 650,
+            x: confetti.x + Phaser.Math.Between(-100, 100),
+            angle: Phaser.Math.Between(0, 360),
+            duration: Phaser.Math.Between(2000, 4000),
+            ease: 'Linear',
+            onComplete: () => confetti.destroy()
+        });
+    }
+
+    spinButton.once('pointerdown', () => {
+        bonusWinContainer.destroy();
+        isSpinning = false;
+    });
+}
+
+function endBonusMode(scene) {
+    isInBonusMode = false;
+    goldGlow.setVisible(false);
+    bonusTriggered = false;
+    freeSpinsText.setVisible(false);
+
+    let totalBonusWin = coins - coinBefore; 
+    showBonusEndPopup(scene, totalBonusWin);
 }
 
 
