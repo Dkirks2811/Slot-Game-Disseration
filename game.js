@@ -219,7 +219,7 @@ function spinReel(scene, reel, index, spinSpeed, onComplete) {
         onComplete: () => {
             reel.forEach((symbol, positionIndex) => {
                 const randomSymbol = Phaser.Math.Between(1, 8);
-                const isBonus = !isInBonusMode && Phaser.Math.Between(1, 10) === 2;
+                const isBonus = !isInBonusMode && Phaser.Math.Between(1, 250) === 2;
                 symbol.setTexture(isBonus ? 'bonusSymbol' : `symbol${randomSymbol}`);
 
                 if (isBonus) {
