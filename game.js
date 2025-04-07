@@ -28,22 +28,29 @@ let isInBonusMode = false;
 let bonusTriggered = false;
 let bonusSymbolCount = 0;
 let freeSpinsText;
+let reminderBox;
+let reminderText;
+let sessionStartCoins = coins;
+let profitLossText;
+
 
 let freeSpinsLeft = 0;
 let goldGlow;
 
 let bonusAchieved = false; 
 
-const payouts = {
-    symbol1: 10,
-    symbol2: 15,
-    symbol3: 20,
-    symbol4: 25,
-    symbol5: 30,
-    symbol6: 50,
-    symbol7: 75,
-    symbol8: 100
-};
+function getPayouts() {
+    return {
+        symbol1: betAmount,
+        symbol2: betAmount * 1.5,
+        symbol3: betAmount * 2,
+        symbol4: betAmount * 2.5,
+        symbol5: betAmount * 3,
+        symbol6: betAmount * 5,
+        symbol7: betAmount * 7.5,
+        symbol8: betAmount * 10
+    };
+}
 
 const paylines = [
     [1, 1, 1, 1], 
@@ -132,6 +139,12 @@ function create() {
     spinButton = this.add.sprite(400, startY + totalReelHeight + 50, 'spinButton').setInteractive();
     spinButton.setScale(1.25);
     spinButton.on('pointerdown', () => {
+
+        if (reminderText && reminderText.active) {
+            reminderText.destroy();
+            reminderBox.destroy();
+        }
+
         this.sound.play('buttonPress'); 
         spinButton.setScale(1.1); 
         this.tweens.add({
@@ -144,8 +157,77 @@ function create() {
         startSpin(this);
     });
 
+const maxBet = 50;        
+
+const minusButton = this.add.text(670, 548, '-', {
+
+    fontSize: '32px',
+    backgroundColor: '#346564',
+    color: '#fff',
+    fontFamily: 'Lilita One',
+    padding: { x: 15, y: 10 },
+    align: 'center',
+}).setOrigin(0.5).setInteractive().setDepth(10);
+minusButton.setScale(0.8);
+
+const plusButton = this.add.text(530, 548, '+', {
+    fontSize: '32px',
+    backgroundColor: '#346564',
+    color: '#fff',
+    fontFamily: 'Lilita One',
+    padding: { x: 15, y: 10 },
+    align: 'center',
+}).setOrigin(0.5).setInteractive().setDepth(10);
+plusButton.setScale(0.8);
+
+const betText = this.add.text(600, 548, `${betAmount} coins`, {
+    fontSize: '22px',
+    fill: '#fff',
+    fontFamily: 'Lilita One',
+    stroke: '#000',
+    strokeThickness: 3,
+}).setOrigin(0.5).setDepth(10);
+
+function updateBetDisplay() {
+    betText.setText(`${betAmount} coins`);
+
+    plusButton.setAlpha(betAmount >= maxBet ? 0.5 : 1).disableInteractive();
+    minusButton.setAlpha(betAmount <= 1 ? 0.5 : 1).disableInteractive();
+
+    if (betAmount < maxBet) plusButton.setInteractive();
+    if (betAmount > 1) minusButton.setInteractive();
+}
+
+minusButton.on('pointerdown', () => {
+    if (betAmount > 1) {
+        betAmount--;
+        updateBetDisplay();
+        this.sound.play('buttonPress');
+    }
+});
+
+plusButton.on('pointerdown', () => {
+    if (betAmount < maxBet) {
+        betAmount++;
+        updateBetDisplay();
+        this.sound.play('buttonPress');
+    }
+});
+
+updateBetDisplay();
+
+
     coinText = this.add.text(142, 527, `${'Coins:' + coins}`, { fontSize: '22px', fill: '#fff', fontFamily: 'Lilita One', stroke: '#000', strokeThickness: 3,});
     coinText.setAngle(4);
+
+    profitLossText = this.add.text(20, 10, 'Profit/Loss: 0', {
+        fontSize: '20px',
+        fill: '#ff3333', 
+        fontFamily: 'Lilita One',
+        stroke: '#000',
+        strokeThickness: 3
+    });
+
 
     goldGlow = this.add.image(400, 300, 'goldGlow').setDisplaySize(800, 600);
     goldGlow.setDepth(20);
@@ -158,6 +240,41 @@ function create() {
         stroke: '#000',
         strokeThickness: 3,
     }).setVisible(false);
+
+    this.time.addEvent({
+        delay: 300000,
+        loop: true,
+        callback: () => {
+            if (reminderBox && reminderBox.active) return;
+    
+            reminderBox = this.add.rectangle(400, 300, 400, 100, 0x000000, 0.7)
+                .setOrigin(0.5)
+                .setDepth(25)
+                .setScale(0);
+    
+            reminderText = this.add.text(400, 300, 'Reminder: Take a break!', {
+                fontSize: '24px',
+                fill: '#FF0000',
+                fontFamily: 'Lilita One',
+                stroke: '#000',
+                strokeThickness: 4
+            })
+            .setOrigin(0.5)
+            .setDepth(26)
+            .setScale(0);
+    
+            this.tweens.add({
+                targets: [reminderBox, reminderText],
+                scaleX: 1,
+                scaleY: 1,
+                duration: 400,
+                ease: 'Back.easeOut',
+            });
+        }
+    });
+    
+    
+
 }
 
 function startSpin(scene) {
@@ -256,6 +373,11 @@ function spinReel(scene, reel, index, spinSpeed, onComplete) {
 
 function updateCoinText() {
     coinText.setText(`Coins: ${coins}`);
+
+    let net = coins - sessionStartCoins;
+    let displayValue = net >= 0 ? `+${net}` : `${net}`;
+    profitLossText.setText(`Profit/Loss: ${displayValue}`);
+
 }
 
 function showWinPopup(scene, amount) {
@@ -355,7 +477,9 @@ function calculatePayout(scene) {
         );
 
         if (allMatch && baseSymbol) {
+            let payouts = getPayouts();
             let payout = payouts[baseSymbol] || 0;
+            
             if (isInBonusMode) payout *= 10;
 
             coins += payout;
@@ -477,3 +601,12 @@ function endBonusMode(scene) {
 
 function update() {
 }
+
+
+
+
+
+
+
+
+
