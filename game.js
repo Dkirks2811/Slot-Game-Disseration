@@ -601,12 +601,3 @@ function endBonusMode(scene) {
 
 function update() {
 }
-
-
-
-
-
-
-
-
-
