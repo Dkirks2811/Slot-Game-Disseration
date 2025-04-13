@@ -9,11 +9,7 @@ const config = {
     }
 };
 
-this.add.text(100, 100, 'Hello!', {
-    fontFamily: 'Lilita One',
-    fontSize: '32px',
-    color: '#fff'
-});
+
 
 
 const game = new Phaser.Game(config);
@@ -119,6 +115,8 @@ function preload() {
     this.load.audio('suspenseSound', './suspense.mp3');
     this.load.audio('bonusStart', './bonusStart.mp3');
     this.load.image('goldGlow', './goldGlow.webp');
+
+
 }
 
 function create() {
