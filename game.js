@@ -10,8 +10,6 @@ const config = {
 };
 
 
-
-
 const game = new Phaser.Game(config);
 
 const reelCount = 4;
@@ -115,8 +113,6 @@ function preload() {
     this.load.audio('suspenseSound', './suspense.mp3');
     this.load.audio('bonusStart', './bonusStart.mp3');
     this.load.image('goldGlow', './goldGlow.webp');
-
-
 }
 
 function create() {

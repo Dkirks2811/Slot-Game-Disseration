@@ -1,0 +1,45 @@
+body, html {
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+    overflow: hidden;
+    font-family: 'Lilita One';
+}
+
+#heading {
+    color: rgb(0, 0, 0);
+    text-align: center;
+    margin: 10px;
+    font-size: 5rem;
+}
+
+
+#game-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 10px;
+
+}
+
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 705px) and (orientation: landscape) {
+    #heading {
+        display: none;
+
+    }
+}
+
