@@ -262,6 +262,15 @@ class MainScene extends Phaser.Scene {
                 this.betAmount--;
                 this.updateBetDisplay();
                 this.sound.play('buttonPress');
+
+                this.tweens.add({
+                    targets: minusButton,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 100,
+                    ease: 'Bounce.easeOut',
+                    yoyo: true
+                });
             }
         });
         
@@ -270,6 +279,16 @@ class MainScene extends Phaser.Scene {
                 this.betAmount++;
                 this.updateBetDisplay();
                 this.sound.play('buttonPress');
+
+                this.tweens.add({
+                    targets: plusButton,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 100,
+                    ease: 'Bounce.easeOut',
+                    yoyo: true
+
+                });
             }
         });
     }
@@ -314,7 +333,12 @@ class MainScene extends Phaser.Scene {
     }
 
     startSpin() {
-        if (this.isSpinning || this.coins <= 0 || (this.isInBonusMode && this.freeSpinsLeft <= 0)) return;
+        if (this.isSpinning || (this.coins < this.betAmount && !this.isInBonusMode) || (this.isInBonusMode && this.freeSpinsLeft <= 0)) {
+            if (this.coins < this.betAmount && !this.isInBonusMode) {
+                this.showLowBalancePopup();
+            }
+            return;
+        }
         this.isSpinning = true;
     
         if (this.bonusAchieved) {
@@ -644,6 +668,33 @@ class MainScene extends Phaser.Scene {
         let totalBonusWin = this.coins - this.coinBefore;
         this.showBonusEndPopup(totalBonusWin);
     }
+
+    showLowBalancePopup() {
+        let popup = this.add.container(400, 300).setDepth(20);
+    
+        let background = this.add.graphics();
+        background.fillStyle(0x000000, 0.8);
+        background.fillRoundedRect(-150, -50, 300, 100, 20);
+        
+        let warningText = this.add.text(0, 0, 'Not enough coins!', {
+            fontSize: '26px',
+            fontFamily: 'Lilita One',
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+    
+        popup.add([background, warningText]);
+    
+        this.tweens.add({
+            targets: popup,
+            alpha: 0,
+            duration: 2000,
+            delay: 1500,
+            onComplete: () => popup.destroy()
+        });
+    }
+    
 
     cleanupReminder() {
         if (this.reminderBox?.active) {
