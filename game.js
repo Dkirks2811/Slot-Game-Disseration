@@ -24,6 +24,9 @@ class PreloadScene extends Phaser.Scene {
         this.load.audio('suspenseSound', './suspense.mp3');
         this.load.audio('bonusStart', './bonusStart.mp3');
         this.load.image('goldGlow', './goldGlow.webp');
+        this.load.image('infoButton', './info.png');  
+        this.load.image('overlayImage', './overlay.png'); 
+        this.load.image('closeButton', './close.png');
     }
 
     createLoadingBar() {
@@ -140,6 +143,8 @@ class MainScene extends Phaser.Scene {
             callback: this.showBreakReminder,
             callbackScope: this 
         });
+
+
 
     }
 
@@ -290,6 +295,47 @@ class MainScene extends Phaser.Scene {
 
                 });
             }
+        });
+        const infoButton = this.add.image(this.cameras.main.width - 30, 30, 'infoButton')
+        .setOrigin(1, 0)
+        .setInteractive({ useHandCursor: true })
+        .setScrollFactor(0) 
+        .setScale(1);
+
+        const overlayBg = this.add.rectangle(
+        this.cameras.main.centerX,
+        this.cameras.main.centerY,
+        this.cameras.main.width * 0.8,
+        this.cameras.main.height * 0.8,
+        0x000000,
+        0.6
+        ).setStrokeStyle(4, 0xffffff).setVisible(false);
+
+        const overlayImage = this.add.image(
+        this.cameras.main.centerX,
+        this.cameras.main.centerY,
+        'overlayImage'
+        ).setVisible(false).setScale(1);
+
+        const closeButton = this.add.image( 700, 75,
+
+        'closeButton'
+        ).setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false);
+
+        infoButton.on('pointerdown', () => {
+        overlayBg.setVisible(true);
+        overlayImage.setVisible(true);
+        closeButton.setVisible(true);
+        this.sound.play('buttonPress');
+
+        });
+
+        closeButton.on('pointerdown', () => {
+        overlayBg.setVisible(false);
+        overlayImage.setVisible(false);
+        closeButton.setVisible(false);
+        this.sound.play('buttonPress');
+
         });
     }
     showBreakReminder() {

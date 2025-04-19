@@ -36,7 +36,6 @@ canvas {
     height: auto;
 }
 
-/* Mobile Landscape Support */
 @media only screen and (max-width: 768px) and (orientation: landscape) {
     body, html {
         flex-direction: row;
@@ -48,13 +47,13 @@ canvas {
     }
 
     #game-container {
-        width: 100vw;
+        width: 120vw;
         height: 100vh;
-        padding: 0;
+        padding: 10px;
     }
 
     canvas {
-        width: 100vw !important;
+        width: 130vw !important;
         height: 80vh !important;
         object-fit: contain;
         display: block;
