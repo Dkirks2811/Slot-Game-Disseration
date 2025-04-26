@@ -446,6 +446,8 @@ class MainScene extends Phaser.Scene {
                     const randomSymbol = Phaser.Math.Between(1, 8);
                     const isBonus = !this.isInBonusMode && Phaser.Math.Between(1, 250) === 2;
                     symbol.setTexture(isBonus ? 'bonusSymbol' : `symbol${randomSymbol}`);
+
+                    //Code adapted from (rexrainbow, 2025)
     
                     if (isBonus) {
                         this.bonusSymbolCount++;
@@ -770,3 +772,5 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+// Code adapted from (Photon Storm - photonstorm.com, 2018)
